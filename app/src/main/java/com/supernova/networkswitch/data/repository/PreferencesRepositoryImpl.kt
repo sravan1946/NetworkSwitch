@@ -2,6 +2,7 @@ package com.supernova.networkswitch.data.repository
 
 import com.supernova.networkswitch.data.source.PreferencesDataSource
 import com.supernova.networkswitch.domain.model.ControlMethod
+import com.supernova.networkswitch.domain.model.NetworkMode
 import com.supernova.networkswitch.domain.model.ToggleModeConfig
 import com.supernova.networkswitch.domain.repository.PreferencesRepository
 import kotlinx.coroutines.flow.Flow
@@ -38,5 +39,21 @@ class PreferencesRepositoryImpl @Inject constructor(
     
     override fun observeToggleModeConfig(): Flow<ToggleModeConfig> {
         return preferencesDataSource.observeToggleModeConfig()
+    }
+
+    override fun observePinnedModes(): Flow<List<NetworkMode>> {
+        return preferencesDataSource.observePinnedModes()
+    }
+
+    override suspend fun setPinnedModes(modes: List<NetworkMode>) {
+        preferencesDataSource.setPinnedModes(modes)
+    }
+
+    override fun observeTileAdded(): Flow<Boolean> {
+        return preferencesDataSource.observeTileAdded()
+    }
+
+    override suspend fun setTileAdded(added: Boolean) {
+        preferencesDataSource.setTileAdded(added)
     }
 }

@@ -8,6 +8,11 @@
 
     <uses-feature android:name="android.hardware.telephony" android:required="false" />
 
+    <!-- Lets setup tell "Shizuku not installed" from "installed but stopped". -->
+    <queries>
+        <package android:name="moe.shizuku.privileged.api" />
+    </queries>
+
     <application
         android:name=".NetworkSwitchApplication"
         android:allowBackup="true"
@@ -29,26 +34,15 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE_PREFERENCES" />
+            </intent-filter>
         </activity>
         
-        <activity
-            android:name=".presentation.ui.activity.SettingsActivity"
-            android:exported="false"
-            android:label="Settings"
-            android:parentActivityName=".presentation.ui.activity.MainActivity"
-            android:theme="@style/Theme.NetworkSwitch" />
-            
-        <activity
-            android:name=".presentation.ui.activity.NetworkModeConfigActivity"
-            android:exported="false"
-            android:label="@string/network_mode_config"
-            android:parentActivityName=".presentation.ui.activity.MainActivity"
-            android:theme="@style/Theme.NetworkSwitch" />
-            
         <service
             android:name=".service.NetworkTileService"
             android:exported="true"
-            android:icon="@drawable/ic_5g_big"
+            android:icon="@drawable/ic_mode_5g"
             android:label="@string/network_switch"
             android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
             <intent-filter>

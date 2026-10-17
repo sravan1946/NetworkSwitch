@@ -52,6 +52,51 @@ enum class NetworkMode(val displayName: String, val value: Int) {
     NR_LTE_TDSCDMA_GSM_WCDMA("2G/3G/4G/5G (NR/LTE/TD-SCDMA/GSM/WCDMA)", 32),
     NR_LTE_TDSCDMA_CDMA_EVDO_GSM_WCDMA("Global 5G + TD-SCDMA (All Networks)", 33);
     
+    /** Radio generations (2–5) this mode allows, derived from the RAT tokens in its name. */
+    val generations: Set<Int>
+        get() = when (this) {
+            // Names that do not spell out their RATs.
+            WCDMA_PREF, GSM_UMTS, CDMA, GLOBAL -> setOf(2, 3)
+            CDMA_NO_EVDO -> setOf(2)
+            EVDO_NO_CDMA -> setOf(3)
+            else -> name.split('_').mapNotNull {
+                when (it) {
+                    "NR" -> 5
+                    "LTE" -> 4
+                    "WCDMA", "TDSCDMA", "EVDO" -> 3
+                    "GSM", "CDMA" -> 2
+                    else -> null
+                }
+            }.toSet()
+        }
+
+    val highestGeneration: Int get() = generations.max()
+
+    /** Compact label for tiles and chips: "5G", "4G + 5G", "2G–5G". */
+    val shortLabel: String
+        get() {
+            val gens = generations.sorted()
+            return when {
+                gens.size == 1 -> "${gens[0]}G"
+                gens.size == 2 -> "${gens[0]}G + ${gens[1]}G"
+                else -> "${gens.first()}G–${gens.last()}G"
+            }
+        }
+
+    /** Human title for lists: "5G only", "4G + 5G". */
+    val title: String get() = if (generations.size == 1) "$shortLabel only" else shortLabel
+
+    /** Radio technologies, e.g. "NR/LTE", taken from the display name's parenthetical. */
+    val technology: String
+        get() = Regex("""\((.*)\)""").find(displayName)?.groupValues?.get(1) ?: displayName
+
+    val group: ModeGroup
+        get() = when {
+            this in COMMON_MODES -> ModeGroup.COMMON
+            name.contains("CDMA") || name.contains("EVDO") || this == GLOBAL -> ModeGroup.REGIONAL
+            else -> ModeGroup.OLDER
+        }
+
     companion object {
         /**
          * Get NetworkMode by RIL constant value
@@ -59,7 +104,16 @@ enum class NetworkMode(val displayName: String, val value: Int) {
         fun fromValue(value: Int): NetworkMode? {
             return values().find { it.value == value }
         }
+
+        private val COMMON_MODES = setOf(NR_ONLY, NR_LTE, LTE_ONLY, NR_LTE_GSM_WCDMA, LTE_GSM_WCDMA)
     }
+}
+
+/** How the mode picker buckets modes; regional (CDMA, TD-SCDMA) modes are tucked away. */
+enum class ModeGroup(val label: String) {
+    COMMON("Common"),
+    OLDER("Older networks"),
+    REGIONAL("Other regions (CDMA, TD-SCDMA)")
 }
 
 /**
@@ -80,6 +134,20 @@ data class ToggleModeConfig(
     
     fun toggle(): ToggleModeConfig {
         return copy(nextModeIsB = !nextModeIsB)
+    }
+
+    /** The other side of the pair from [current]; falls back to the stored flag when unknown. */
+    fun nextModeFrom(current: NetworkMode?): NetworkMode = when (current) {
+        modeA -> modeB
+        modeB -> modeA
+        else -> getNextMode()
+    }
+
+    /** Records that [mode] is now active so the flag stays right for the fallback path. */
+    fun after(mode: NetworkMode): ToggleModeConfig = when (mode) {
+        modeA -> copy(nextModeIsB = true)
+        modeB -> copy(nextModeIsB = false)
+        else -> this
     }
 }
 

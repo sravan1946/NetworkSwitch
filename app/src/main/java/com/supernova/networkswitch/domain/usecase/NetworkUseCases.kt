@@ -25,20 +25,40 @@ class ToggleNetworkModeUseCase @Inject constructor(
     suspend operator fun invoke(subId: Int): Result<NetworkMode> {
         return try {
             val toggleConfig = preferencesRepository.getToggleModeConfig()
-            
-            // Get the next mode to switch to (no current mode detection needed)
-            val targetMode = toggleConfig.getNextMode()
-            
-            // Set the network mode
+
+            // Go by the radio's real mode so a change made elsewhere doesn't make the
+            // toggle "switch" to the mode already active; the flag covers unreadable modes.
+            val current = runCatching { networkControlRepository.getCurrentNetworkMode(subId) }.getOrNull()
+            val targetMode = toggleConfig.nextModeFrom(current)
+
             val result = networkControlRepository.setNetworkMode(subId, targetMode)
-            
+
             if (result.isSuccess) {
-                // Update the toggle state for next time
-                val newConfig = toggleConfig.toggle()
-                preferencesRepository.setToggleModeConfig(newConfig)
+                preferencesRepository.setToggleModeConfig(toggleConfig.after(targetMode))
             }
-            
+
             result.map { targetMode }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+}
+
+/**
+ * Applies one specific mode (a pinned mode), keeping the toggle pair's flag in step.
+ */
+class SetNetworkModeUseCase @Inject constructor(
+    private val networkControlRepository: NetworkControlRepository,
+    private val preferencesRepository: PreferencesRepository
+) {
+    suspend operator fun invoke(subId: Int, mode: NetworkMode): Result<NetworkMode> {
+        return try {
+            val result = networkControlRepository.setNetworkMode(subId, mode)
+            if (result.isSuccess) {
+                val config = preferencesRepository.getToggleModeConfig()
+                preferencesRepository.setToggleModeConfig(config.after(mode))
+            }
+            result.map { mode }
         } catch (e: Exception) {
             Result.failure(e)
         }

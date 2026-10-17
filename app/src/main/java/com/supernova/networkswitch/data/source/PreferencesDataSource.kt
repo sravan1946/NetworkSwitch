@@ -25,12 +25,15 @@ class PreferencesDataSource @Inject constructor(
         private val TOGGLE_MODE_A_KEY = intPreferencesKey("toggle_mode_a")
         private val TOGGLE_MODE_B_KEY = intPreferencesKey("toggle_mode_b")
         private val TOGGLE_NEXT_IS_B_KEY = booleanPreferencesKey("toggle_next_is_b")
+        private val PINNED_MODES_KEY = stringPreferencesKey("pinned_modes")
+        private val TILE_ADDED_KEY = booleanPreferencesKey("tile_added")
         
         private const val DEFAULT_CONTROL_METHOD = "SHIZUKU"
         
         private val DEFAULT_MODE_A = NetworkMode.LTE_ONLY
         private val DEFAULT_MODE_B = NetworkMode.NR_ONLY
         private const val DEFAULT_NEXT_IS_B = true
+        private val DEFAULT_PINNED_MODES = listOf(NetworkMode.LTE_ONLY, NetworkMode.NR_LTE, NetworkMode.NR_ONLY)
     }
     
     private fun parseControlMethod(methodString: String?): ControlMethod {
@@ -91,5 +94,29 @@ class PreferencesDataSource @Inject constructor(
             
             ToggleModeConfig(modeA, modeB, nextIsB)
         }
+    }
+
+    /** Stored as comma-separated RIL values; unknown values are dropped. */
+    fun observePinnedModes(): Flow<List<NetworkMode>> {
+        return dataStore.data.map { preferences ->
+            preferences[PINNED_MODES_KEY]
+                ?.split(',')
+                ?.mapNotNull { it.toIntOrNull()?.let(NetworkMode::fromValue) }
+                ?: DEFAULT_PINNED_MODES
+        }
+    }
+
+    suspend fun setPinnedModes(modes: List<NetworkMode>) {
+        dataStore.edit { preferences ->
+            preferences[PINNED_MODES_KEY] = modes.joinToString(",") { it.value.toString() }
+        }
+    }
+
+    fun observeTileAdded(): Flow<Boolean> {
+        return dataStore.data.map { preferences -> preferences[TILE_ADDED_KEY] ?: false }
+    }
+
+    suspend fun setTileAdded(added: Boolean) {
+        dataStore.edit { preferences -> preferences[TILE_ADDED_KEY] = added }
     }
 }

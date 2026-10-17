@@ -33,4 +33,22 @@ class NetworkModeTest {
         assertEquals("5G Only (NR)", NetworkMode.NR_ONLY.displayName)
         assertEquals("4G/5G (NR/LTE)", NetworkMode.NR_LTE.displayName)
     }
+
+    @Test
+    fun testShortLabelsAndGroups() {
+        assertEquals("5G", NetworkMode.NR_ONLY.shortLabel)
+        assertEquals("4G + 5G", NetworkMode.NR_LTE.shortLabel)
+        assertEquals("2G–5G", NetworkMode.NR_LTE_GSM_WCDMA.shortLabel)
+        assertEquals("2G + 3G", NetworkMode.GSM_UMTS.shortLabel)
+        assertEquals("3G", NetworkMode.EVDO_NO_CDMA.shortLabel)
+        assertEquals("5G only", NetworkMode.NR_ONLY.title)
+        assertEquals("NR/LTE", NetworkMode.NR_LTE.technology)
+
+        assertEquals(ModeGroup.COMMON, NetworkMode.LTE_ONLY.group)
+        assertEquals(ModeGroup.REGIONAL, NetworkMode.TDSCDMA_ONLY.group)
+        assertEquals(ModeGroup.REGIONAL, NetworkMode.GLOBAL.group)
+        assertEquals(ModeGroup.OLDER, NetworkMode.GSM_ONLY.group)
+        // Every mode must resolve to at least one generation.
+        NetworkMode.entries.forEach { assertTrue(it.name, it.generations.isNotEmpty()) }
+    }
 }

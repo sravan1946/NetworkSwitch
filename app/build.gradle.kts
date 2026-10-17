@@ -7,7 +7,7 @@ plugins {
 
 android {
     namespace = "com.supernova.networkswitch"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.supernova.networkswitch"

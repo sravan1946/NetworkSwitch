@@ -64,4 +64,18 @@ interface PreferencesRepository {
      * Observe toggle mode configuration changes
      */
     fun observeToggleModeConfig(): Flow<ToggleModeConfig>
+
+    /**
+     * Modes pinned for one-tap switching on the home screen, in display order
+     */
+    fun observePinnedModes(): Flow<List<NetworkMode>>
+
+    suspend fun setPinnedModes(modes: List<NetworkMode>)
+
+    /**
+     * Whether the Quick Settings tile has been added, to stop offering it
+     */
+    fun observeTileAdded(): Flow<Boolean>
+
+    suspend fun setTileAdded(added: Boolean)
 }

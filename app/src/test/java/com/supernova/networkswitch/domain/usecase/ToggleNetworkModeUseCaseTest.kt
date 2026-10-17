@@ -131,4 +131,19 @@ class ToggleNetworkModeUseCaseTest {
         assertTrue(result.isFailure)
         assertTrue(result.exceptionOrNull() is RuntimeException)
     }
+
+    @Test
+    fun `should switch away from the actual current mode even when the flag is stale`() = runTest {
+        // Flag says B is next, but the radio is already on B (changed outside the app).
+        val config = ToggleModeConfig(NetworkMode.LTE_ONLY, NetworkMode.NR_ONLY, nextModeIsB = true)
+        coEvery { preferencesRepository.getToggleModeConfig() } returns config
+        coEvery { networkControlRepository.getCurrentNetworkMode(testSubId) } returns NetworkMode.NR_ONLY
+        coEvery { networkControlRepository.setNetworkMode(testSubId, NetworkMode.LTE_ONLY) } returns Result.success(Unit)
+        coEvery { preferencesRepository.setToggleModeConfig(any()) } returns Unit
+
+        val result = useCase(testSubId)
+
+        assertEquals(NetworkMode.LTE_ONLY, result.getOrNull())
+        coVerify { preferencesRepository.setToggleModeConfig(config.copy(nextModeIsB = true)) }
+    }
 }
